@@ -3,8 +3,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebas
 import { getFirestore } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
 // Firebase configuration
-export const firebaseConfig = {  // ✅ Exporting firebaseConfig
-    apiKey: "AIzaSyDze2goR4OIzoG4hMxTQ5wp9rPXzBmUN8s",
+export const firebaseConfig = { 
+    apiKey: "",
     authDomain: "hrms-485d8.firebaseapp.com",
     projectId: "hrms-485d8",
     storageBucket: "hrms-485d8.firebaseapp.com", 
@@ -16,4 +16,5 @@ export const firebaseConfig = {  // ✅ Exporting firebaseConfig
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export { db };  // ✅ Exporting Firestore database instance
+
+export { db };  

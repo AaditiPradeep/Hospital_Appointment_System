@@ -1,4 +1,4 @@
-import { db } from "./firebaseConfig.js";  // ✅ Correct import
+import { db } from "./firebaseConfig.js";  
 import { collection, query, where, getDocs, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 
 // Lock Slot Function with emergency override logic
@@ -29,7 +29,7 @@ async function lockSlot(doctorName, date, time, priority = 0) {
         appointmentDate: date, 
         appointmentTime: time, 
         isLocked: true, 
-        timestamp: new Date()  // ✅ Added timestamp for tracking
+        timestamp: new Date() 
     });
 
     // Auto-remove lock after 5 minutes
@@ -48,4 +48,5 @@ async function lockSlot(doctorName, date, time, priority = 0) {
     return true; // Successfully locked the slot
 }
 
-export { lockSlot };  // ✅ Exporting function for use in other files
+
+export { lockSlot }; 

@@ -169,8 +169,9 @@ async function pushAppointments() {
     const ref = collection(db, "appointments");
     for (const appointment of appointments) {
         await addDoc(ref, appointment);
-        console.log("✅ Added:", appointment);
+        console.log("Added:", appointment);
     }
 }
 
 pushAppointments();
+

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <script type="module" src="dashboard.js"></script>
+    <style>
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border-bottom: 1px solid #ccc;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ddd; /* Default profile background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h2>Welcome to Dashboard</h2>
+        
+        <div class="user-info">
+            <span id="userEmail">Loading...</span>
+            <div id="profileIcon" class="profile-icon">?</div>
+            <button id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <!-- Book Appointment Button -->
+    <button id="bookAppointmentBtn" disabled onclick="window.location.href='index.html'">
+        Book Appointment
+    </button>
+    <div id="notificationList">
+        <!-- Unread notifications will be displayed here -->
+    </div>
+
+    
+    
+</body>
+</html>

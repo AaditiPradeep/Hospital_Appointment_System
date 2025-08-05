@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Push Sample Data</title>
+</head>
+<body>
+  <h1>Pushing Data...</h1>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDze2goR4OIzoG4hMxTQ5wp9rPXzBmUN8s",
+      authDomain: "hrms-485d8.firebaseapp.com",
+      projectId: "hrms-485d8",
+      storageBucket: "hrms-485d8.appspot.com",
+      messagingSenderId: "196518577867",
+      appId: "1:196518577867:web:d108e3ffa3fa2c52dcfd4e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const sampleAppointments = [
+      {
+        doctorId: "doc101",
+        patientId: "pat001",
+        timeSlot: "2025-04-15T09:00:00Z",
+        duration: 30,
+        status: "confirmed",
+        scheduledAt: "2025-04-15T08:45:00Z",
+        startedAt: "2025-04-15T09:05:00Z"
+      }
+    ];
+
+    async function pushSampleData() {
+      for (let appt of sampleAppointments) {
+        try {
+          await addDoc(collection(db, "appointments"), appt);
+          console.log("✅ Data added:", appt);
+        } catch (error) {
+          console.error("❌ Error adding document:", error);
+        }
+      }
+    }
+
+    pushSampleData();
+  </script>
+</body>
+</html>

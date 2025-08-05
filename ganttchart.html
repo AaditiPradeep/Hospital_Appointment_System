@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Doctor Appointment Schedule</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        #controls {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 5px;
+        }
+        .schedule {
+            display: block;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+            background-color: #fff;
+        }
+        .doctor-row {
+            display: flex;
+            min-height: 50px;
+            border-bottom: 1px solid #eee;
+        }
+        .doctor-row:last-child {
+            border-bottom: none;
+        }
+        .doctor-name {
+            background-color: #f9f9f9;
+            padding: 10px;
+            font-weight: bold;
+            min-width: 150px;
+            width: 150px;
+            border-right: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            box-sizing: border-box;
+        }
+        .time-slots-container {
+            display: flex;
+            flex-grow: 1;
+        }
+        .time-header {
+            background-color: #f9f9f9;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            min-width: 100px;
+            width: 100px;
+            border-right: 1px solid #eee;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        .time-slot {
+            min-width: 100px;
+            width: 100px;
+            border-right: 1px solid #eee;
+            position: relative;
+            flex-shrink: 0;
+            box-sizing: border-box;
+        }
+        .time-slot:last-child {
+            border-right: none;
+        }
+        .appointment {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            right: 5px;
+            bottom: 5px;
+            padding: 5px;
+            border-radius: 4px;
+            color: white;
+            font-size: 12px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            cursor: default;
+        }
+        .appointment.high-priority {
+            background-color: #ff6b6b;
+            border-left: 3px solid #ff0000;
+        }
+        .appointment.normal-priority {
+            background-color: #74b9ff;
+            border-left: 3px solid #0984e3;
+        }
+        .appointment.completed {
+            background-color: #55efc4;
+            border-left: 3px solid #00b894;
+        }
+        .appointment.cancelled {
+            background-color: #dfe6e9;
+            color: #636e72;
+            border-left: 3px dashed #b2bec3;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+        }
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            margin-right: 5px;
+            border-radius: 3px;
+        }
+        select {
+            padding: 8px 12px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+        label {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .tooltip {
+            position: fixed;
+            background-color: white;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
+            pointer-events: none;
+            font-size: 14px;
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Doctor Appointment Schedule</h1>
+        
+        <div id="controls">
+            <label for="dateSelector">Select Date:</label>
+            <select id="dateSelector"></select>
+        </div>
+        
+        <div id="schedule-container"></div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                <span>High Priority</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #74b9ff;"></div>
+                <span>Normal Priority</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #55efc4;"></div>
+                <span>Completed</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background-color: #dfe6e9; border: 1px dashed #b2bec3;"></div>
+                <span>Cancelled</span>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db } from './firebaseConfig.js';
+        import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
+
+        const timeToMinutes = (timeStr) => {
+            if (!timeStr) return 0;
+            const [time, period] = timeStr.trim().split(" ");
+            let [hours, minutes] = time.split(":").map(Number);
+            if (period === "PM" && hours !== 12) hours += 12;
+            if (period === "AM" && hours === 12) hours = 0;
+            return hours * 60 + minutes;
+        };
+
+        const minutesToTime = (minutes) => {
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            const hour = h % 12 === 0 ? 12 : h % 12;
+            return `${hour}:${m.toString().padStart(2, '0')} ${ampm}`;
+        };
+
+        const formatDate = (dateStr) => {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        };
+
+        const createTimeSlots = () => {
+            const slots = [];
+            for (let hour = 8; hour < 18; hour++) {
+                for (let minute = 0; minute < 60; minute += 30) {
+                    const hour12 = hour % 12 === 0 ? 12 : hour % 12;
+                    const time = `${hour12}:${minute.toString().padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
+                    slots.push({
+                        display: time,
+                        minutes: hour * 60 + minute
+                    });
+                }
+            }
+            return slots;
+        };
+
+        const renderSchedule = async (targetDate) => {
+            const q = query(collection(db, "Appointments"), where("appointmentDate", "==", targetDate));
+            const querySnapshot = await getDocs(q);
+
+            // Get all appointments for the selected date
+            const appointments = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                appointments.push({
+                    id: doc.id,
+                    doctor: data.doctorName,
+                    patient: data.patientName,
+                    time: data.appointmentTime,
+                    minutes: timeToMinutes(data.appointmentTime),
+                    duration: 30, // assuming 30 minute appointments
+                    priority: data.priority || 2,
+                    status: data.status || 'Scheduled',
+                    notes: data.notes || ''
+                });
+            });
+
+            // Get unique doctors
+            const doctors = [...new Set(appointments.map(a => a.doctor))];
+            doctors.sort(); // Sort doctors alphabetically
+
+            // Create time slots (8AM to 6PM in 30-minute increments)
+            const timeSlots = createTimeSlots();
+
+            // Build the schedule grid
+            const scheduleContainer = document.getElementById('schedule-container');
+            scheduleContainer.innerHTML = '';
+            
+            const schedule = document.createElement('div');
+            schedule.className = 'schedule';
+
+            // Create header row with time slots
+            const headerRow = document.createElement('div');
+            headerRow.className = 'doctor-row';
+            
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'doctor-name';
+            headerRow.appendChild(emptyCell);
+
+            const timeSlotsContainer = document.createElement('div');
+            timeSlotsContainer.className = 'time-slots-container';
+
+            timeSlots.forEach(slot => {
+                const timeHeader = document.createElement('div');
+                timeHeader.className = 'time-header';
+                timeHeader.textContent = slot.display;
+                timeSlotsContainer.appendChild(timeHeader);
+            });
+
+            headerRow.appendChild(timeSlotsContainer);
+            schedule.appendChild(headerRow);
+
+            // Create doctor rows with appointments
+            doctors.forEach(doctor => {
+                const doctorRow = document.createElement('div');
+                doctorRow.className = 'doctor-row';
+                
+                const doctorCell = document.createElement('div');
+                doctorCell.className = 'doctor-name';
+                doctorCell.textContent = doctor;
+                doctorRow.appendChild(doctorCell);
+
+                const doctorTimeSlotsContainer = document.createElement('div');
+                doctorTimeSlotsContainer.className = 'time-slots-container';
+
+                timeSlots.forEach(slot => {
+                    const timeSlot = document.createElement('div');
+                    timeSlot.className = 'time-slot';
+                    
+                    const appointment = appointments.find(a => 
+                        a.doctor === doctor && 
+                        a.minutes === slot.minutes
+                    );
+
+                    if (appointment) {
+                        const appointmentDiv = document.createElement('div');
+                        appointmentDiv.className = 'appointment';
+                        
+                        // Set priority/status class
+                        if (appointment.status === 'Completed') {
+                            appointmentDiv.classList.add('completed');
+                        } else if (appointment.status === 'Cancelled') {
+                            appointmentDiv.classList.add('cancelled');
+                        } else if (appointment.priority === 1) {
+                            appointmentDiv.classList.add('high-priority');
+                        } else {
+                            appointmentDiv.classList.add('normal-priority');
+                        }
+
+                        appointmentDiv.textContent = appointment.patient;
+                        
+                        // Create tooltip on hover
+                        appointmentDiv.addEventListener('mouseenter', (e) => {
+                            const tooltip = document.createElement('div');
+                            tooltip.className = 'tooltip';
+                            tooltip.innerHTML = `
+                                <strong>${appointment.patient}</strong><br>
+                                <strong>Doctor:</strong> ${appointment.doctor}<br>
+                                <strong>Time:</strong> ${appointment.time}<br>
+                                <strong>Status:</strong> ${appointment.status}<br>
+                                ${appointment.notes ? `<strong>Notes:</strong> ${appointment.notes}` : ''}
+                            `;
+                            
+                            document.body.appendChild(tooltip);
+                            
+                            // Position the tooltip relative to the viewport
+                            const rect = e.target.getBoundingClientRect();
+                            tooltip.style.left = `${Math.min(rect.left, window.innerWidth - 320)}px`;
+                            tooltip.style.top = `${rect.bottom + window.scrollY + 5}px`;
+                            
+                            appointmentDiv.tooltip = tooltip;
+                        });
+                        
+                        appointmentDiv.addEventListener('mousemove', (e) => {
+                            if (appointmentDiv.tooltip) {
+                                const tooltip = appointmentDiv.tooltip;
+                                // Update tooltip position when mouse moves
+                                const x = Math.min(e.clientX, window.innerWidth - 320);
+                                tooltip.style.left = `${x}px`;
+                                tooltip.style.top = `${e.clientY + window.scrollY + 20}px`;
+                            }
+                        });
+                        
+                        appointmentDiv.addEventListener('mouseleave', () => {
+                            if (appointmentDiv.tooltip) {
+                                document.body.removeChild(appointmentDiv.tooltip);
+                                appointmentDiv.tooltip = null;
+                            }
+                        });
+
+                        timeSlot.appendChild(appointmentDiv);
+                    }
+
+                    doctorTimeSlotsContainer.appendChild(timeSlot);
+                });
+
+                doctorRow.appendChild(doctorTimeSlotsContainer);
+                schedule.appendChild(doctorRow);
+            });
+
+            scheduleContainer.appendChild(schedule);
+            document.querySelector('h1').textContent = `Doctor Appointment Schedule - ${formatDate(targetDate)}`;
+        };
+
+        const populateDateSelector = async () => {
+            const allDocs = await getDocs(collection(db, "Appointments"));
+            const allDates = new Set();
+
+            allDocs.forEach(doc => {
+                const data = doc.data();
+                if (data.appointmentDate) {
+                    allDates.add(data.appointmentDate);
+                }
+            });
+
+            const dateSelector = document.getElementById("dateSelector");
+            const sortedDates = Array.from(allDates).sort();
+
+            // If no dates in database, use today's date
+            if (sortedDates.length === 0) {
+                const today = new Date().toISOString().split('T')[0];
+                sortedDates.push(today);
+                renderSchedule(today);
+            }
+
+            sortedDates.forEach(date => {
+                const option = document.createElement("option");
+                option.value = date;
+                option.textContent = formatDate(date);
+                dateSelector.appendChild(option);
+            });
+
+            if (sortedDates.length > 0) {
+                dateSelector.value = sortedDates[0];
+                renderSchedule(sortedDates[0]);
+            }
+
+            dateSelector.addEventListener("change", () => {
+                const selected = dateSelector.value;
+                renderSchedule(selected);
+            });
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateDateSelector();
+        });
+    </script>
+</body>
+</html>

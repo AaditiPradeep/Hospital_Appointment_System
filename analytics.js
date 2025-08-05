@@ -1,82 +1,3 @@
-/*import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
-import { firebaseConfig } from "./firebaseConfig.js";
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-async function loadAnalytics() {
-    const appointmentSnap = await getDocs(collection(db, "Appointments"));
-    const deletedSnap = await getDocs(collection(db, "RescheduledAppointments"));
-
-    const appointments = [];
-    const doctorUtil = {};
-    const apptPerDay = {};
-    let totalWaiting = 0;
-    let waitCount = 0;
-
-    appointmentSnap.forEach(doc => {
-        const data = doc.data();
-        appointments.push(data);
-
-        // Doctor Utilization
-        const docName = data.doctorName;
-        if (!doctorUtil[docName]) doctorUtil[docName] = 0;
-        doctorUtil[docName]++;
-
-        // Appointments per Day
-        const date = data.appointmentDate;
-        if (!apptPerDay[date]) apptPerDay[date] = 0;
-        apptPerDay[date]++;
-
-        // Waiting Time (Optional: You can simulate startedAt, scheduledAt if available)
-        if (data.scheduledAt && data.startedAt) {
-            const scheduled = new Date(data.scheduledAt);
-            const started = new Date(data.startedAt);
-            const diffMins = Math.floor((started - scheduled) / 60000);
-            if (diffMins >= 0) {
-                totalWaiting += diffMins;
-                waitCount++;
-            }
-        }
-    });
-
-    const preemptions = deletedSnap.size;
-
-    //const avgWaiting = waitCount ? (totalWaiting / waitCount).toFixed(2) : "N/A";
-
-    // Visualization
-    plotBarChart("doctorUtilChart", Object.keys(doctorUtil), Object.values(doctorUtil), "Appointments per Doctor");
-    plotBarChart("appointmentsPerDayChart", Object.keys(apptPerDay), Object.values(apptPerDay), "Appointments per Day");
-
-    document.getElementById("preemptionsCount").innerText = `Number of Preemptions: ${preemptions}`;
-    //sdocument.getElementById("avgWaitingTime").innerText = `Average Waiting Time: ${avgWaiting} minutes`;
-}
-
-function plotBarChart(canvasId, labels, data, label) {
-    new Chart(document.getElementById(canvasId), {
-        type: "bar",
-        data: {
-            labels: labels,
-            datasets: [{
-                label: label,
-                data: data,
-                backgroundColor: "rgba(54, 162, 235, 0.6)"
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true }
-            }
-        }
-    });
-}
-
-loadAnalytics();
-
-*/
-
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-app.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.5.0/firebase-firestore.js";
 import { firebaseConfig } from "./firebaseConfig.js";
@@ -239,5 +160,6 @@ function plotAppointmentsChart(canvasId, labels, data) {
         }
     });
 }
+
 
 loadAnalytics();
